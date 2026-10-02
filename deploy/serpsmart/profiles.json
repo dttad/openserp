@@ -314,12 +314,40 @@
     "integrated"
    ],
    "weight": 1
+  },
+  {
+   "id": "chrome-macos-vn",
+   "user_agent_template": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_major}.0.0.0 Safari/537.36",
+   "platform": "macOS",
+   "platform_version": "15.6.1",
+   "architecture": "arm",
+   "bitness": "64",
+   "mobile": false,
+   "accept_language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+   "navigator_langs": [
+    "vi-VN",
+    "vi",
+    "en-US",
+    "en"
+   ],
+   "locale": "vi-VN",
+   "timezone": "Asia/Ho_Chi_Minh",
+   "viewport": {
+    "width": 1512,
+    "height": 982
+   },
+   "tags": [
+    "macos",
+    "apple-silicon",
+    "vn"
+   ],
+   "weight": 1
   }
  ],
  "lane_profile_ids": {
-  "google:us": "chrome-linux-nvidia",
-  "google:vn": "chrome-linux-nvidia",
-  "google:": "chrome-linux-nvidia"
+  "google:us": "chrome-macos-vn",
+  "google:vn": "chrome-macos-vn",
+  "google:": "chrome-macos-vn"
  },
  "default_region_by_engine": {
   "yandex": "ru"
