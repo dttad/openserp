@@ -62,6 +62,8 @@ type AppConfig struct {
 	BrowserPath    string        `mapstructure:"browser_path"`
 	ProfilesJSON   string        `mapstructure:"profiles"`
 	IsBrowserHead  bool          `mapstructure:"head"`
+	BrowserArgs    string        `mapstructure:"browser_args"`
+	UserDataDir    string        `mapstructure:"user_data_dir"`
 	IsLeaveHead    bool          `mapstructure:"leave_head"`
 	IsLeakless     bool          `mapstructure:"leakless"`
 	BlockResources string        `mapstructure:"block_resources"`

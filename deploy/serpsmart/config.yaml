@@ -7,18 +7,21 @@ server:
   insecure: true # Allow insecure TLS connections
 
 app:
+  debug_endpoints: true # Enables /debug/fingerprint-check (internal network only)
+  user_data_dir: /data/chrome-profile # Persistent profile: cookies/consent survive restarts
+  browser_args: "use-angle=vulkan; enable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan; ignore-gpu-blocklist; enable-gpu-rasterization" # Real GPU for WebGL
   log_format: "text" # json|text
   log_level: "" # error|warn|info|debug|trace; empty = warn for CLI, info for serve
   timeout: 15 # Browser/search timeout in seconds, per attempt; the request deadline is derived from this x retries
   browser_path: "" # Custom browser binary path (chrome/chromium/edge..)
-  profiles: "" # Overriding built-in browser profiles
-  head: false # Headful mode
+  profiles: /usr/src/app/profiles.json # Pin Google lanes to the Linux+NVIDIA profile (matches the real GPU)
+  head: true # Headful Chrome on Xvfb (normal-machine mode)
   leakless: false # Force browser process cleanup after request
   leave_head: false # Keep tabs open after request
-  block_resources: "image,font,css,media" # Block heavy subresources in browser mode
-  block_trackers: true # Block known tracker domains
-  max_processes: 3 # Concurrent Chrome processes
-  idle_ttl: 5m # close a Chrome that has not served traffic for this long
+  block_resources: "" # Load images/fonts/CSS like a normal browser
+  block_trackers: false # Normal browsers load them too
+  max_processes: 1 # One Chrome: the persistent profile is locked by Chrome
+  idle_ttl: 30m # Keep the browser warm like a normal session
 
   mega_timeout: 90s # max total wait for /mega/* requests; slow engines return partial results
 
@@ -75,8 +78,8 @@ captcha:
   solver_enabled: false # Global captcha solver gate (requires 2captcha.apikey)
 
 google:
-  rate_requests: 10 # Allowed average requests per minute (kept low: one residential IP)
-  rate_burst: 2 # Burst requests before limiter applies
+  rate_requests: 4 # Allowed average requests per minute (one residential IP, human-like pace)
+  rate_burst: 1 # Burst requests before limiter applies
   #captcha: true # Engine-level solver flag (also requires captcha.solver_enabled=true)
 
 yandex:

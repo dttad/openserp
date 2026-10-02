@@ -139,6 +139,8 @@ func buildFingerprintBrowserOptions() core.BrowserOpts {
 		Insecure:           config.Server.Insecure,
 		BlockResourceTypes: blockedResourceTypes,
 		BlockTrackers:      config.App.BlockTrackers,
+		ExtraArgs:          splitBrowserArgs(config.App.BrowserArgs),
+		UserDataDir:        config.App.UserDataDir,
 	}
 	if config.Server.IsDebug {
 		opts.IsHeadless = false
@@ -727,4 +729,16 @@ func entryHasTag(entry core.ProxyEntryConfig, tag string) bool {
 
 func init() {
 	RootCmd.AddCommand(serveCMD)
+}
+
+// splitBrowserArgs turns "use-angle=vulkan; ignore-gpu-blocklist" (';' or newline separated, so values
+// such as enable-features=A,B keep their commas) into Chrome switches.
+func splitBrowserArgs(raw string) []string {
+	args := []string{}
+	for _, part := range strings.FieldsFunc(raw, func(r rune) bool { return r == ';' || r == '\n' }) {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			args = append(args, trimmed)
+		}
+	}
+	return args
 }

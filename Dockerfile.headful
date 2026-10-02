@@ -1,0 +1,51 @@
+# "Normal machine" image: real Google Chrome in headful mode on a virtual display (Xvfb),
+# full font set, vi_VN locale and Asia/Ho_Chi_Minh time zone. Run with an NVIDIA GPU
+# (NVIDIA_DRIVER_CAPABILITIES=all) and Chrome GPU flags (see deploy/serpsmart/config.yaml) so
+# WebGL renders on the real GPU instead of SwiftShader, the usual tell of a headless bot.
+FROM --platform=$BUILDPLATFORM golang:1.24.6-bookworm@sha256:ab1d1823abb55a9504d2e3e003b75b36dbeb1cbcc4c92593d85a84ee46becc6c AS builder
+
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+ARG TARGETOS
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} go build -trimpath -ldflags="-s -w" -o /app/openserp .
+
+FROM debian:bookworm-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=vi_VN.UTF-8 \
+    LC_ALL=vi_VN.UTF-8 \
+    TZ=Asia/Ho_Chi_Minh
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+       ca-certificates wget gnupg locales tzdata xvfb xauth dbus dbus-x11 \
+       fonts-noto-core fonts-noto-cjk fonts-noto-color-emoji fonts-liberation fonts-dejavu-core fonts-roboto \
+       libvulkan1 vulkan-tools \
+  && printf 'vi_VN.UTF-8 UTF-8\nen_US.UTF-8 UTF-8\n' > /etc/locale.gen && locale-gen \
+  && wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+  && apt-get install -y --no-install-recommends /tmp/chrome.deb \
+  && rm -f /tmp/chrome.deb && rm -rf /var/lib/apt/lists/* \
+  && useradd --create-home --uid 1001 --shell /bin/bash chrome \
+  && mkdir -p /usr/src/app /data /tmp/xdg-chrome && chown chrome:chrome /usr/src/app /data /tmp/xdg-chrome && chmod 700 /tmp/xdg-chrome
+
+WORKDIR /usr/src/app
+COPY --from=builder /app/openserp /usr/local/bin/openserp
+COPY --chown=chrome:chrome config.yaml ./config.yaml
+
+ENV OPENSERP_APP_BROWSER_PATH=/usr/bin/google-chrome-stable \
+    XDG_RUNTIME_DIR=/tmp/xdg-chrome \
+    OPENSERP_APP_HEAD=true \
+    OPENSERP_SERVER_HOST=0.0.0.0 \
+    OPENSERP_SERVER_PORT=7000
+
+USER chrome
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget --quiet --tries=1 --spider "http://127.0.0.1:${OPENSERP_SERVER_PORT}/health" || exit 1
+
+# Virtual 1920x1080 screen for the headful browser.
+ENTRYPOINT ["xvfb-run", "-a", "--server-args=-screen 0 1920x1080x24 -nolisten tcp", "openserp"]
+CMD ["serve"]

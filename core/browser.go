@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
+	"github.com/go-rod/rod/lib/launcher/flags"
 	"github.com/go-rod/rod/lib/proto"
 	browserprofile "github.com/karust/openserp/core/browser"
 	"github.com/sirupsen/logrus"
@@ -58,6 +59,12 @@ type BrowserOpts struct {
 	BlockResourceTypes []proto.NetworkResourceType
 	// BlockTrackers toggles static tracker-domain blocking.
 	BlockTrackers bool
+	// ExtraArgs are additional Chrome command-line switches ("name" or "name=value"),
+	// e.g. GPU flags so WebGL renders on real hardware instead of SwiftShader.
+	ExtraArgs []string
+	// UserDataDir keeps a persistent Chrome profile (cookies, consent, history) across restarts.
+	// Chrome locks a profile, so use it with max_processes: 1.
+	UserDataDir string
 }
 
 // Check applies default option values when optional fields are unset.
@@ -296,6 +303,20 @@ func NewBrowser(opts BrowserOpts) (*Browser, error) {
 	if path != "" {
 		logrus.WithField("browser_path", path).Debug("Using browser binary")
 		l = l.Bin(path)
+	}
+	for _, arg := range opts.ExtraArgs {
+		name, value, hasValue := strings.Cut(strings.TrimLeft(strings.TrimSpace(arg), "-"), "=")
+		if name == "" {
+			continue
+		}
+		if hasValue {
+			l = l.Set(flags.Flag(name), value)
+		} else {
+			l = l.Set(flags.Flag(name))
+		}
+	}
+	if dir := strings.TrimSpace(opts.UserDataDir); dir != "" {
+		l = l.UserDataDir(dir)
 	}
 
 	b := Browser{
